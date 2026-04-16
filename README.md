@@ -40,3 +40,5 @@
 | `current_step` | `integer` or `None` | Which step we are on (`0` = not started)     | `1` (means we are about to execute step 1)   |
 | `tool_results` | `list` of `string`  | Outputs from tools like search or calculator | `["Step 1 result: 4"]`                       |
 | `final_answer` | `string` or `None`  | The final answer after all steps             | `"4"`                                        |
+
+##Oatseater
