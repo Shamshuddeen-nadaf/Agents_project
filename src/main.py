@@ -24,5 +24,4 @@ def run_agent(question: str):
 
 if __name__ == "__main__":
     # Test with a simple GAIA Level 1 question
-    filePath = r"FILES\ASSOCIATE.pdf"
-    run_agent(f"What is in the file {filePath} talking about?")
+    run_agent("Latest advancements in robotics and autumation ")
