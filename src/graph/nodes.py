@@ -70,7 +70,7 @@ def planner_node(state: AgentState) -> AgentState:
 Constraints: {state.get('constraints', [])}
 Known facts: {state.get('verified_facts', [])}
 Previous failures: {state.get('replan_reasons', [])}"""
-    state["plan"] = parse_plan(llm.invoke(prompt).content)
+    state["plan"] = parse_plan(llm.invoke(prompt).content) # type: ignore
     state["status"] = "executing"
     state["current_step_id"] = "step_1" if state["plan"] else ""
     return state
@@ -99,7 +99,7 @@ Select the right tool for the job and provide the input.""")
     state["messages"].append(thought)
     state["reasoning_trace"].append(ReasoningTrace(
         step=state.get("iteration", 0),
-        thought=thought.content,
+        thought=thought.content, # type: ignore
         confidence=0.5,
         strategy="react",
         timestamp=datetime.now().isoformat(),
@@ -123,7 +123,7 @@ Did this advance the goal? Rate confidence 0–1.
 If confidence < 0.4, recommend backtracking to which step.
 Identify any contradictions with verified facts.""")
 
-    parsed = parse_critique(critique.content)
+    parsed = parse_critique(critique.content) # type: ignore
     state["critiques"].append(parsed)
 
     if parsed["severity"] == "high":
@@ -145,7 +145,7 @@ def memory_node(state: AgentState) -> AgentState:
 Extract key facts, entities, and relationships as JSON.
 Flag confidence for each.""")
 
-    facts = parse_facts(new_facts.content)
+    facts = parse_facts(new_facts.content) # type: ignore
     state["episodic_memory"].extend(facts)
     state["verified_facts"].extend(f["value"] for f in facts if f["confidence"] > 0.85)
 
@@ -167,10 +167,10 @@ Is this a simple question (answer directly with one tool call or no tools)
 or a complex task (needs multi-step planning)?
 Reply with exactly one word: "simple" or "complex\"""")
 
-    if "simple" in classification.content.lower():
+    if "simple" in classification.content.lower(): # type: ignore
         answer = llm.invoke(f"Answer this question concisely: {state['task']}")
         state["messages"].append(answer)
-        state["final_answer"] = answer.content
+        state["final_answer"] = answer.content # type: ignore
         state["status"] = "done"
     else:
         state["status"] = "planning"

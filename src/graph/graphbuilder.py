@@ -10,6 +10,7 @@ from src.tools.web_search import web_search
 from src.tools.calculator import calculator
 from src.tools.file_reader import file_reader
 from src.tools.web_scraper import web_scraper_tool
+from src.tools.python_sandbox import python_sandbox_tool
 
 
 def _route_router(state: AgentState) -> str:
@@ -25,7 +26,7 @@ def _route_critic(state: AgentState) -> str:
 
 
 def build_graph():
-    tools = [web_search, calculator, file_reader, web_scraper_tool]
+    tools = [web_search, calculator, file_reader, web_scraper_tool,python_sandbox_tool]
 
     workflow = StateGraph(AgentState)
 

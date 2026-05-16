@@ -43,6 +43,7 @@ def make_initial_state(task: str) -> AgentState:
         "citations": [],
         "error": None,
     }
+_THICK_LINE = '=' * 60
 
 if __name__ == "__main__":
     try:
@@ -50,28 +51,83 @@ if __name__ == "__main__":
         png_bytes = app.get_graph().draw_mermaid_png()
         with open('./graph.png','wb') as f:
             f.write(png_bytes)
-        print("Graph built successfully.")
-        print()
+        print("Graph built successfully.\n")
 
-        state = make_initial_state("What is the capital of France?")
-        result = app.invoke(state)
-        print("Final status:", result.get("status"))
-        print()
+        state = make_initial_state("Plan out a trip to Mangalore starting from the Badami Cave Temples.")
 
-        if result.get("final_answer"):
-            print("Answer:", result["final_answer"])
-        elif result.get("messages"):
-            last = result["messages"][-1]
-            print("Last message:", last.content[:500] if hasattr(last, "content") else last)
+        for event in app.stream(state):
+            for node_name, node_state in event.items():
+                print(f"\n{_THICK_LINE}")
+                print(f"  NODE: {node_name}")
+                print(_THICK_LINE)
+
+                if node_name == "router":
+                    print(f"  Status → {node_state.get('status')}")
+                    msgs = node_state.get('messages', [])
+                    if msgs:
+                        last = msgs[-1]
+                        text = last.content[:500] if hasattr(last, 'content') else str(last)
+                        print(f"  Thought: {text}")
+
+                elif node_name == "planner":
+                    print(f"  Plan:")
+                    for step in node_state.get('plan', []):
+                        print(f"    {step['id']}: {step['description']}")
+                    print(f"  Next: {node_state.get('current_step_id')}")
+
+                elif node_name == "reasoner":
+                    trace = node_state.get('reasoning_trace', [])
+                    if trace:
+                        t = trace[-1]
+                        print(f"  Strategy: {t['strategy']}  (confidence: {t['confidence']})")
+                        print(f"  Thought:\n    {t['thought'][:600]}")
+
+                elif node_name == "tool_node":
+                    for msg in node_state.get('messages', []):
+                        if hasattr(msg, 'name'):
+                            print(f"  Tool called: {msg.name}")
+                        content = getattr(msg, 'content', None)
+                        if content:
+                            print(f"  Result: {str(content)[:300]}")
+
+                elif node_name == "critic":
+                    critiques = node_state.get('critiques', [])
+                    if critiques:
+                        c = critiques[-1]
+                        print(f"  Critique [{c['severity']}]: {c['critique'][:300]}")
+                    print(f"  Status → {node_state.get('status')}")
+
+                elif node_name == "memory":
+                    facts = node_state.get('verified_facts', [])
+                    print(f"  Stored {len(facts)} new facts")
+
+                print(f"  Iteration: {node_state.get('iteration')}  |  "
+                      f"Step: {node_state.get('current_step_id')}  |  "
+                      f"Status: {node_state.get('status')}")
+
+        final = event
+
+        print(f"\n{_THICK_LINE}")
+        print("  FINAL RESULT")
+        print(f"{_THICK_LINE}")
+        print("Final status:", final.get("status"))
+
+        if final.get("final_answer"):
+            print("Answer:", final["final_answer"])
+        elif final.get("messages"):
+            last = final["messages"][-1]
+            text = last.content[:500] if hasattr(last, "content") else str(last)
+            print("Last message:", text)
         else:
             print("No answer generated.")
-        print()
 
-        if result.get("plan"):
+        if final.get("plan"):
             print("Plan steps:")
-            for s in result["plan"]:
+            for s in final["plan"]:
                 print(f"  {s['id']}: {s['description']} [{s['status']}]")
-        if result.get("error"):
-            print("Error:", result["error"])
+        if final.get("error"):
+            print("Error:", final["error"])
     except Exception as e:
         print(f"Error: {e}")
+
+
