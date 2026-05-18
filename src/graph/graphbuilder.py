@@ -18,7 +18,9 @@ def _route_router(state: AgentState) -> str:
 
 
 def _route_reasoner(state: AgentState) -> str:
-    return END if state["status"] == "done" else "tool_node"
+    if state["status"] == "done" or state["iteration"] >= state["max_iterations"]:
+        return END
+    return "tool_node"
 
 
 def _route_critic(state: AgentState) -> str:

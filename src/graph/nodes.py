@@ -79,6 +79,8 @@ Previous failures: {state.get('replan_reasons', [])}"""
 def reasoner_node(state: AgentState) -> AgentState:
     '''Look at the current step and figure out what tool to call, if any'''
 
+    state["iteration"] += 1
+
     # grab the step we're supposed to be working on
     current_step = next(
         (s for s in state.get("plan", []) if s["id"] == state.get("current_step_id")),
