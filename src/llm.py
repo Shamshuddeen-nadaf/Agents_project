@@ -21,7 +21,7 @@ LM_STUDIO_CONFIG = {
 
 GEMINI_CONFIG = {
     "model":"gemini-2.5-flash",
-    "api_key1":os.getenv("GEMINI_API_KEY"),
+    "api_key":os.getenv("GEMINI_API_KEY"),
     "temperature":0.7
 }
 @lru_cache(maxsize=1)

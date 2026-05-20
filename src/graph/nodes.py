@@ -11,9 +11,15 @@ from src.tools.web_search import web_search
 from src.tools.calculator import calculator
 from src.tools.file_reader import file_reader
 from src.tools.web_scraper import web_scraper_tool
+from langchain_core.tools import tool
 
-tools = [web_search, calculator, file_reader, web_scraper_tool]
-llm = get_llm()
+@tool
+def final_answer(answer: str) -> str:
+    """Call this when you have a complete final answer for the user. Provide the answer as the input."""
+    return answer
+
+tools = [web_search, calculator, file_reader, web_scraper_tool, final_answer]
+llm = get_llm(provider="ollama")
 bound_llm = llm.bind_tools(tools)
 # helper functions
 def _extract_json(text: str) -> str:
@@ -96,7 +102,9 @@ Action history: {state.get('action_history', [])}
 Active hypotheses: {state.get('hypotheses', [])}
 Confidence so far: {state.get('confidence_score', 0.0)}
 
-Select the right tool for the job and provide the input.""")
+Available tools: web_search, calculator, file_reader, web_scraper, final_answer.
+
+Call the right tool to make progress. When the goal is fully answered, call final_answer with the final answer.""")
 
     state["messages"].append(thought)
     state["reasoning_trace"].append(ReasoningTrace(
@@ -163,17 +171,35 @@ Flag confidence for each.""")
 def router_node(state: AgentState) -> AgentState:
     '''Figure out if this task needs the full planner pipeline or can be answered directly'''
 
-    classification = llm.invoke(f"""Task: {state['task']}
+    classification = llm.invoke(f"""You are a classifier. Reply with exactly one word: either "simple" or "complex".
 
-Is this a simple question (answer directly with one tool call or no tools)
-or a complex task (needs multi-step planning)?
-Reply with exactly one word: "simple" or "complex\"""")
+Task: {state['task']}
 
-    if "simple" in classification.content.lower(): # type: ignore
+"simple" = a question that can be answered in one step with no research.
+"complex" = anything that needs research, planning, or multiple steps.
+
+One word: """)
+
+    label = classification.content.strip().lower() # type: ignore
+    if isinstance(label, list):
+        label = " ".join(p.get("text", "") for p in label)
+    label = str(label).strip().strip('"').strip("'")
+
+    if "complex" in label:
+        state["status"] = "planning"
+    else:
         answer = llm.invoke(f"Answer this question concisely: {state['task']}")
         state["messages"].append(answer)
         state["final_answer"] = answer.content # type: ignore
         state["status"] = "done"
-    else:
-        state["status"] = "planning"
+    return state
+
+
+def finalizer_node(state: AgentState) -> AgentState:
+    '''Extract the answer from the final_answer tool call into state.'''
+    for msg in reversed(state.get("messages", [])):
+        if isinstance(msg, ToolMessage) and getattr(msg, "name", None) == "final_answer":
+            state["final_answer"] = msg.content # type: ignore
+            state["status"] = "done"
+            break
     return state

@@ -4,7 +4,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.graph.graphbuilder import build_graph
 from src.graph.state import AgentState
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage 
 
 def make_initial_state(task: str) -> AgentState:
     return {
@@ -53,7 +53,7 @@ if __name__ == "__main__":
             f.write(png_bytes)
         print("Graph built successfully.\n")
 
-        state = make_initial_state("Plan out a trip to Mangalore starting from the Badami Cave Temples.")
+        state = make_initial_state("What is the current price of Gold?") 
 
         for event in app.stream(state):
             for node_name, node_state in event.items():
@@ -101,11 +101,14 @@ if __name__ == "__main__":
                     facts = node_state.get('verified_facts', [])
                     print(f"  Stored {len(facts)} new facts")
 
+                elif node_name == "finalizer":
+                    print(f"  Final answer: {node_state.get('final_answer', 'N/A')[:300]}")
+
                 print(f"  Iteration: {node_state.get('iteration')}  |  "
                       f"Step: {node_state.get('current_step_id')}  |  "
                       f"Status: {node_state.get('status')}")
 
-        final = event
+        final = list(event.values())[0] if event else {}
 
         print(f"\n{_THICK_LINE}")
         print("  FINAL RESULT")
